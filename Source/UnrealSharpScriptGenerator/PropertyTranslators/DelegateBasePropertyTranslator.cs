@@ -20,7 +20,7 @@ public class DelegateBasePropertyTranslator : PropertyTranslator
         int delegateSignatureIndex = delegateName.IndexOf("__DelegateSignature", StringComparison.Ordinal);
         string strippedDelegateName = delegateName.Substring(0, delegateSignatureIndex);
         
-        return wrapperName ? "U" + strippedDelegateName : strippedDelegateName;
+        return wrapperName ? "F" + strippedDelegateName : strippedDelegateName;
     }
     
     public static string GetFullDelegateName(UhtFunction function, bool wrapperName = false)
