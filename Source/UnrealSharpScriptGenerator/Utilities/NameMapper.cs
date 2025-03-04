@@ -257,11 +257,11 @@ public static class NameMapper
         while (true)
         {
             // Strip the "b" prefix from bool names
-            if (inName.Length - nameOffset >= 2 && inName[nameOffset] == 'b' && char.IsUpper(inName[nameOffset + 1]))
-            {
-                nameOffset += 1;
-                continue;
-            }
+            // if (inName.Length - nameOffset >= 2 && inName[nameOffset] == 'b' && char.IsUpper(inName[nameOffset + 1]))
+            // {
+            //     nameOffset += 1;
+            //     continue;
+            // }
 
             // Strip the "In" prefix from names
             if (inName.Length - nameOffset >= 3 && inName[nameOffset] == 'I' && inName[nameOffset + 1] == 'n' && char.IsUpper(inName[nameOffset + 2]))
