@@ -62,7 +62,7 @@ public partial class AActor
     /// <typeparam name="T">Class of the component to add</typeparam>
     /// <returns>The component</returns>
     public T AddComponentByClass<T>(bool bManualAttachment, FTransform relativeTransform) where T : UActorComponent
-        => (AddComponentByClass(new TSubclassOf<UActorComponent>(typeof(T)), bManualAttachment, relativeTransform, deferredFinish: false) as T)!;
+        => (AddComponentByClass(new TSubclassOf<UActorComponent>(typeof(T)), bManualAttachment, relativeTransform, bDeferredFinish: false) as T)!;
 
     /// <summary>
     /// Adds a component to the actor by class.
@@ -74,7 +74,7 @@ public partial class AActor
     /// <returns>The component</returns>
     public T AddComponentByClass<T>(bool bManualAttachment, FTransform relativeTransform, Action<T> initializerFunc) where T : UActorComponent
     {
-        T component = (AddComponentByClass(new TSubclassOf<UActorComponent>(typeof(T)), bManualAttachment, relativeTransform, deferredFinish: true) as T)!;
+        T component = (AddComponentByClass(new TSubclassOf<UActorComponent>(typeof(T)), bManualAttachment, relativeTransform, bDeferredFinish: true) as T)!;
         initializerFunc(component);
         FinishAddComponent(component, bManualAttachment, relativeTransform);
         return component;
@@ -88,7 +88,7 @@ public partial class AActor
     /// <param name="relativeTransform">Set the relative transform of the component</param>
     /// <returns>The component if added, otherwise null</returns>
     public UActorComponent AddComponentByClass(TSubclassOf<UActorComponent> @class, bool bManualAttachment, FTransform relativeTransform) 
-        => AddComponentByClass(@class, bManualAttachment, relativeTransform, deferredFinish: false);
+        => AddComponentByClass(@class, bManualAttachment, relativeTransform, bDeferredFinish: false);
     
     /// <summary>
     /// Register a SubObject that will get replicated along with the actor component.
