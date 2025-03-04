@@ -1,11 +1,12 @@
 ﻿#include "CSUnrealType.h"
 
+#include "TypeGenerator/Register/CSMetaDataUtils.h"
+
 void FCSUnrealType::SerializeFromJson(const TSharedPtr<FJsonObject>& JsonObject)
 {
-	PropertyType = static_cast<ECSPropertyType>(JsonObject->GetIntegerField(TEXT("PropertyType")));
-}
-
-bool FCSUnrealType::IsEqual(const TSharedPtr<FCSUnrealType> Other) const
-{
-	return PropertyType == Other->PropertyType;
+	if (!JsonObject->Values.IsEmpty())
+	{
+		ArrayDim = JsonObject->GetIntegerField(TEXT("ArrayDim"));
+		PropertyType = static_cast<ECSPropertyType>(JsonObject->GetIntegerField(TEXT("PropertyType")));
+	}
 }

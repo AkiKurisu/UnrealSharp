@@ -1,8 +1,7 @@
 ﻿#include "UClassExporter.h"
-
-#include "CSManager.h"
 #include "UnrealSharpCore/TypeGenerator/Register/TypeInfo/CSClassInfo.h"
 #include "UnrealSharpCore/UnrealSharpCore.h"
+#include "UnrealSharpCore/TypeGenerator/Register/CSTypeRegistry.h"
 
 void UUClassExporter::ExportFunctions(FRegisterExportedFunction RegisterExportedFunction)
 {
@@ -36,12 +35,9 @@ UFunction* UUClassExporter::GetNativeFunctionFromInstanceAndName(const UObject* 
 	return NativeObject->FindFunctionChecked(FunctionName);
 }
 
-void* UUClassExporter::GetDefaultFromName(const char* AssemblyName, const char* Namespace, const char* ClassName)
+void* UUClassExporter::GetDefaultFromName(const char* ClassName)
 {
-	TSharedPtr<FCSAssembly> Assembly = UCSManager::Get().FindOrLoadAssembly(AssemblyName);
-	FCSFieldName FieldName(Namespace, ClassName);
-	
-	UClass* Class = Assembly->FindClass(FieldName);
+	UClass* Class = FCSTypeRegistry::Get().GetClassFromName(ClassName);
 	
 	if (!IsValid(Class))
 	{
@@ -50,7 +46,7 @@ void* UUClassExporter::GetDefaultFromName(const char* AssemblyName, const char* 
 	}
 
 	UObject* CDO = Class->GetDefaultObject();
-	return UCSManager::Get().FindManagedObject(CDO).GetPointer();
+	return UCSManager::Get().FindManagedObject(CDO).GetIntPtr();
 }
 
 void* UUClassExporter::GetDefaultFromInstance(UObject* Object)
@@ -70,5 +66,5 @@ void* UUClassExporter::GetDefaultFromInstance(UObject* Object)
 		CDO = Object->GetClass()->GetDefaultObject();
 	}
 	
-	return UCSManager::Get().FindManagedObject(CDO).GetPointer();
+	return UCSManager::Get().FindManagedObject(CDO).GetIntPtr();
 }

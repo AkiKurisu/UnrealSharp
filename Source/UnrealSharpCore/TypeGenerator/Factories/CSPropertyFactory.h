@@ -9,10 +9,7 @@ class UCSPropertyGenerator;
 class UNREALSHARPCORE_API FCSPropertyFactory
 {
 public:
-
 	static void Initialize();
-
-	static UCSPropertyGenerator* FindPropertyGenerator(ECSPropertyType PropertyType);
 	
 	static FProperty* CreateProperty(UField* Outer, const FCSPropertyMetaData& PropertyMetaData);
 	static FProperty* CreateAndAssignProperty(UField* Outer, const FCSPropertyMetaData& PropertyMetaData);
@@ -20,6 +17,8 @@ public:
 	
 	static TSharedPtr<FCSUnrealType> CreateTypeMetaData(const TSharedPtr<FJsonObject>& PropertyMetaData);
 
+	static UCSPropertyGenerator* FindPropertyGenerator(ECSPropertyType PropertyType);
+
 private:
-	static TArray<TObjectPtr<UCSPropertyGenerator>> PropertyGenerators;
+	static TArray<TWeakObjectPtr<UCSPropertyGenerator>> PropertyGenerators;
 };

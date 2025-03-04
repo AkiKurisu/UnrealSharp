@@ -2,18 +2,14 @@
 
 #include "CSGeneratedTypeBuilder.h"
 #include "MetaData/CSInterfaceMetaData.h"
-#include "TypeGenerator/CSInterface.h"
 
-class UNREALSHARPCORE_API FCSGeneratedInterfaceBuilder : public TCSGeneratedTypeBuilder<FCSInterfaceMetaData, UCSInterface>
+class UNREALSHARPCORE_API FCSGeneratedInterfaceBuilder : public TCSGeneratedTypeBuilder<FCSInterfaceMetaData, UClass>
 {
 public:
 
-	FCSGeneratedInterfaceBuilder(const TSharedPtr<FCSInterfaceMetaData>& InTypeMetaData, const TSharedPtr<FCSAssembly>& InOwningAssembly) : TCSGeneratedTypeBuilder(InTypeMetaData, InOwningAssembly) { }
+	FCSGeneratedInterfaceBuilder(const TSharedPtr<FCSInterfaceMetaData>& InTypeMetaData) : TCSGeneratedTypeBuilder(InTypeMetaData) { }
 
 	// TCSGeneratedTypeBuilder interface implementation
-	virtual void RebuildType() override;
-#if WITH_EDITOR
-	virtual void UpdateType() override;
-#endif
+	virtual void StartBuildingType() override;
 	// End of implementation
 };

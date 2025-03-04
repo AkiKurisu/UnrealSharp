@@ -8,13 +8,10 @@ class UNREALSHARPCORE_API FCSGeneratedStructBuilder : public TCSGeneratedTypeBui
 {
 public:
 	
-	FCSGeneratedStructBuilder(const TSharedPtr<FCSStructMetaData>& InTypeMetaData, const TSharedPtr<FCSAssembly>& InOwningAssembly) : TCSGeneratedTypeBuilder(InTypeMetaData, InOwningAssembly) {}
+	FCSGeneratedStructBuilder(const TSharedPtr<FCSStructMetaData>& InTypeMetaData) : TCSGeneratedTypeBuilder(InTypeMetaData) {}
 
 	// TCSGeneratedTypeBuilder interface implementation
-	virtual void RebuildType() override;
-#if WITH_EDITOR
-	virtual void UpdateType() override;
-#endif
+	virtual void StartBuildingType() override;
 	// End of implementation
 
 private:

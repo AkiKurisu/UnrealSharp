@@ -17,22 +17,3 @@ void FCSDefaultComponentMetaData::SerializeFromJson(const TSharedPtr<FJsonObject
 		AttachmentSocket = *AttachmentSocketStr;
 	}
 }
-
-bool FCSDefaultComponentMetaData::IsEqual(TSharedPtr<FCSUnrealType> Other) const
-{
-	if (!FCSUnrealType::IsEqual(Other))
-	{
-		return false;
-	}
-
-	TSharedPtr<FCSDefaultComponentMetaData> OtherDefaultComponent = SafeCast<FCSDefaultComponentMetaData>(Other);
-	if (!OtherDefaultComponent.IsValid())
-	{
-		return false;
-	}
-
-	return IsRootComponent == OtherDefaultComponent->IsRootComponent &&
-		AttachmentComponent == OtherDefaultComponent->AttachmentComponent &&
-		AttachmentSocket == OtherDefaultComponent->AttachmentSocket &&
-			InnerType == OtherDefaultComponent->InnerType;
-}

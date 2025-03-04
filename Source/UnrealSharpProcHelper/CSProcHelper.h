@@ -31,12 +31,8 @@ public:
 	
 	static FString GetRuntimeConfigPath();
 	
-	static FString GetPluginAssembliesPath();
-	
-	static FString GetUnrealSharpPluginsPath();
-	static FString GetUnrealSharpCorePath();
-	
-	static FString GetGlueLibraryPath();
+	static FString GetAssembliesPath();
+	static FString GetUnrealSharpLibraryPath();
 	static FString GetUnrealSharpBuildToolPath();
 
 	// Path to the directory where we store the user's assembly after it has been processed by the weaver.

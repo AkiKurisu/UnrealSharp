@@ -67,7 +67,7 @@ public static class UnrealClassProcessor
 
         foreach (var field in classTypeDefinition.Fields)
         {
-            if (field.IsUProperty())
+            if (WeaverHelper.IsUProperty(field))
             {
                 throw new InvalidPropertyException(field, "Fields cannot be UProperty");
             }
@@ -97,7 +97,7 @@ public static class UnrealClassProcessor
             EmitFunctionGlueToStaticCtor(virtualFunction, processor, loadNativeClassField, staticConstructor);
         }
 
-        staticConstructor.FinalizeMethod();
+        WeaverHelper.FinalizeMethod(staticConstructor);
     }
 
     static void EmitFunctionGlueToStaticCtor(FunctionMetaData function, ILProcessor processor, Instruction loadNativeClassField, MethodDefinition staticConstructor)

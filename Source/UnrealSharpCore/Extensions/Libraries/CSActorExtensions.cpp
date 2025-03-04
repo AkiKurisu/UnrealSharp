@@ -4,6 +4,7 @@
 #include "Engine/InheritableComponentHandler.h"
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
+#include "TypeGenerator/Register/CSGeneratedClassBuilder.h"
 
 namespace ReflectionHelper
 {
@@ -94,11 +95,6 @@ UActorComponent* UCSActorExtensions::GetComponentTemplate(const AActor* Actor, F
 
 	UE_LOG(LogUnrealSharp, Error, TEXT("Component %s not found in actor %s. Should not happen to DefaultComponents"), *ComponentName.ToString(), *Actor->GetName());
 	return nullptr;
-}
-
-FBox UCSActorExtensions::GetComponentsBoundingBox(const AActor* Actor, bool bNonColliding, bool bIncludeFromChildActors)
-{
-	return Actor->GetComponentsBoundingBox(bNonColliding, bIncludeFromChildActors);
 }
 
 void UCSActorExtensions::CreateNewRecord(const UInheritableComponentHandler* InheritableComponentHandler, const FComponentKey& Key, FComponentOverrideRecord* NewRecord)

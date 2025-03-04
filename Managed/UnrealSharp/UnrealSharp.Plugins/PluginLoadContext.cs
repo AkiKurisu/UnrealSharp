@@ -7,37 +7,29 @@ public class PluginLoadContext(AssemblyDependencyResolver resolver, bool isColle
 {
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        if (string.IsNullOrEmpty(assemblyName.Name))
-        {
-            return default;
-        }
-        
-        foreach (Assembly sharedAssembly in PluginLoader.SharedAssemblies)
-        {
-            if (sharedAssembly.GetName().Name == assemblyName.Name)
-            {
-                return Main.MainLoadContext.LoadFromAssemblyName(assemblyName);
-            }
-        }
-        
-        foreach (var loadedPlugin in PluginLoader.LoadedPlugins)
-        {
-            if (!loadedPlugin.IsAssemblyAlive || loadedPlugin.WeakRefAssembly?.Target is not Assembly assembly)
-            {
-                continue;
-            }
+        if (string.IsNullOrEmpty(assemblyName.Name)) return default;
 
-            if (assembly.GetName() == assemblyName)
-            {
-                return assembly;
-            }
+        if (PluginLoader.SharedAssemblies.Any(a => a.FullName == assemblyName.FullName))
+        {
+            return GetLoadContext(Assembly.GetExecutingAssembly())!.LoadFromAssemblyName(assemblyName);
+        }
+
+        //check if assembly already loaded in another plugin
+        var loadedAssembly = PluginLoader.LoadedPlugins
+            .Where(p => p.IsAssemblyAlive && p.WeakRefAssembly!.Target is Assembly)
+            .Select(p => (Assembly)p.WeakRefAssembly!.Target!)
+            .FirstOrDefault(a => a.FullName == assemblyName.FullName);
+
+        if (loadedAssembly != null)
+        {
+            return loadedAssembly;
         }
 
         string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
 
         if (string.IsNullOrEmpty(assemblyPath))
         {
-            return null;
+            return default;
         }
 
         using FileStream assemblyFile = File.Open(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.Read);

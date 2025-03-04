@@ -12,12 +12,13 @@ public:
     virtual void StartupModule() override;
     virtual void ShutdownModule() override;
 private:
-    
     void OnNewClass(UClass* NewClass);
-    void OnManagedAssemblyLoaded(const FName& AssemblyName);
+    void OnManagedAssemblyLoaded(const FString& AssemblyName);
+
     void RecompileAndReinstanceBlueprints();
 
     FCSBlueprintCompiler BlueprintCompiler;
     
-    TArray<UBlueprint*> ManagedClassesToCompile;
+    TArray<UBlueprint*> OtherManagedClasses;
+    TArray<UBlueprint*> ManagedComponentsToCompile;
 };

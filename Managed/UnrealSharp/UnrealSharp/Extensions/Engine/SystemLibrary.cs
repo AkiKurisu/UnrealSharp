@@ -1,4 +1,3 @@
-using UnrealSharp.CoreUObject;
 using UnrealSharp.Interop;
 
 namespace UnrealSharp.Engine;
@@ -22,19 +21,10 @@ public partial class SystemLibrary
             {
                 throw new ArgumentException("The target of the action must be an UObject.");
             }
-            
+        
             FTimerHandle timerHandle = new FTimerHandle();
             UWorldExporter.CallSetTimer(owner.NativeObject, action.Method.Name, time, bLooping.ToNativeBool(), initialStartDelay, &timerHandle);
             return timerHandle;
         }
-    }
-    
-    /// <summary>
-    /// Does a collision trace along the given line and returns the first blocking hit encountered.
-    /// This trace finds the objects that RESPONDS to the given TraceChannel
-    /// </summary>
-    public static bool LineTraceByChannel(FVector start, FVector end, ETraceTypeQuery traceChannel, bool traceComplex, IList<AActor> actorsToIgnore, out FHitResult outHit)
-    {
-        return LineTraceByChannel(start, end, traceChannel, traceComplex, actorsToIgnore, EDrawDebugTrace.None, out outHit, true);
     }
 }

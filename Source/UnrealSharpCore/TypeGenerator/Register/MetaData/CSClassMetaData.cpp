@@ -16,13 +16,12 @@ void FCSClassMetaData::SerializeFromJson(const TSharedPtr<FJsonObject>& JsonObje
 		ClassConfigName = *ClassConfigNameStr;
 	}
 
-	const TArray<TSharedPtr<FJsonValue>>* FoundInterfaces;
-	if (JsonObject->TryGetArrayField(TEXT("Interfaces"), FoundInterfaces))
+	TArray<FString> InterfacesStr;
+	if (JsonObject->TryGetStringArrayField(TEXT("Interfaces"), InterfacesStr))
 	{
-		for (const TSharedPtr<FJsonValue>& Interface : *FoundInterfaces)
+		for (const FString& Interface : InterfacesStr)
 		{
-			FCSTypeReferenceMetaData& InterfaceMetaData = Interfaces.AddDefaulted_GetRef();
-			InterfaceMetaData.SerializeFromJson(Interface->AsObject());
+			Interfaces.Add(*Interface);
 		}
 	}
 

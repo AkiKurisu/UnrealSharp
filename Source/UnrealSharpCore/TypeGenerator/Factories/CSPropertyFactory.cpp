@@ -6,21 +6,15 @@
 #include "TypeGenerator/Register/MetaData/CSDelegateMetaData.h"
 #include "UnrealSharpUtilities/UnrealSharpUtils.h"
 
-TArray<TObjectPtr<UCSPropertyGenerator>> FCSPropertyFactory::PropertyGenerators;
+TArray<TWeakObjectPtr<UCSPropertyGenerator>> FCSPropertyFactory::PropertyGenerators;
 
 void FCSPropertyFactory::Initialize()
 {
-	if (PropertyGenerators.Num() > 0)
-	{
-		return;
-	}
-	
-	TArray<UCSPropertyGenerator*> FoundPropertyGeneratorClasses;
-	FUnrealSharpUtils::GetAllCDOsOfClass<UCSPropertyGenerator>(FoundPropertyGeneratorClasses);
-	
-	PropertyGenerators.Reserve(FoundPropertyGeneratorClasses.Num());
-	
-	for (UCSPropertyGenerator* PropertyGenerator : FoundPropertyGeneratorClasses)
+	TArray<UCSPropertyGenerator*> FoundPropertyGenerators;
+	FUnrealSharpUtils::GetAllCDOsOfClass<UCSPropertyGenerator>(FoundPropertyGenerators);
+
+	PropertyGenerators.Reserve(FoundPropertyGenerators.Num());
+	for (UCSPropertyGenerator* PropertyGenerator : FoundPropertyGenerators)
 	{
 		PropertyGenerators.Add(PropertyGenerator);
 	}
@@ -58,7 +52,7 @@ FProperty* FCSPropertyFactory::CreateProperty(UField* Outer, const FCSPropertyMe
 	
 	if (NewProperty->HasAnyPropertyFlags(CPF_Net) && Outer->IsA<UBlueprintGeneratedClass>())
 	{
-		UBlueprintGeneratedClass* OwnerClass = static_cast<UBlueprintGeneratedClass*>(Outer);
+		UBlueprintGeneratedClass* OwnerClass = CastChecked<UBlueprintGeneratedClass>(Outer);
 		++OwnerClass->NumReplicatedProperties;
 			
 		if (!PropertyMetaData.RepNotifyFunctionName.IsNone())
@@ -77,6 +71,7 @@ FProperty* FCSPropertyFactory::CreateAndAssignProperty(UField* Outer, const FCSP
 {
 	FProperty* Property = CreateProperty(Outer, PropertyMetaData);
 	Outer->AddCppProperty(Property);
+	PropertyMetaData.Type->OnPropertyCreated(Property);
 	return Property;
 }
 
@@ -108,14 +103,15 @@ TSharedPtr<FCSUnrealType> FCSPropertyFactory::CreateTypeMetaData(const TSharedPt
 
 UCSPropertyGenerator* FCSPropertyFactory::FindPropertyGenerator(ECSPropertyType PropertyType)
 {
-	for (TObjectPtr<UCSPropertyGenerator>& PropertyGenerator : PropertyGenerators)
+	for (TWeakObjectPtr<UCSPropertyGenerator>& PropertyGenerator : PropertyGenerators)
 	{
-		if (!PropertyGenerator->SupportsPropertyType(PropertyType))
+		UCSPropertyGenerator* PropertyGeneratorPtr = PropertyGenerator.Get();
+		if (!PropertyGeneratorPtr->SupportsPropertyType(PropertyType))
 		{
 			continue;
 		}
 
-		return PropertyGenerator;
+		return PropertyGeneratorPtr;
 	}
 	
 	return nullptr;

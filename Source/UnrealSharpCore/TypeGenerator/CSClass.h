@@ -1,11 +1,12 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/Package.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "CSClass.generated.h"
 
-struct FGCHandle;
-struct FCSAssembly;
+class FCSGeneratedClassBuilder;
+class UCSFunctionBase;
 struct FCSharpClassInfo;
 
 UCLASS()
@@ -13,13 +14,14 @@ class UNREALSHARPCORE_API UCSClass : public UBlueprintGeneratedClass
 {
 	GENERATED_BODY()
 public:
-	
-	TSharedPtr<FCSharpClassInfo> GetClassInfo() const;
-	TSharedPtr<const FGCHandle> GetClassHandle() const;
-	TSharedPtr<FCSAssembly> GetOwningAssembly() const;
 
-	void SetClassInfo(const TSharedPtr<FCSharpClassInfo>& InClassMetaData);
+	TSharedRef<const FCSharpClassInfo> GetClassInfo() const;
+	bool CanTick() const { return bCanTick; }
+	void SetClassMetaData(const TSharedPtr<FCSharpClassInfo>& InClassMetaData);
 
 private:
-	TSharedPtr<FCSharpClassInfo> ClassInfo;
+
+	bool bCanTick = true;
+	TSharedPtr<FCSharpClassInfo> ClassMetaData;
+	
 };

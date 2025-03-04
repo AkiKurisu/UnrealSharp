@@ -1,10 +1,7 @@
 ﻿#include "CSGeneratedClassBuilder.h"
-
-#include "CSAssembly.h"
 #include "CSGeneratedInterfaceBuilder.h"
-#include "CSManager.h"
-#include "CSMetaDataUtils.h"
 #include "CSSimpleConstructionScriptBuilder.h"
+#include "CSTypeRegistry.h"
 #include "UnrealSharpCore/UnrealSharpCore.h"
 #include "UnrealSharpCore/TypeGenerator/CSBlueprint.h"
 #include "UObject/UnrealType.h"
@@ -16,76 +13,45 @@
 #include "UnrealSharpCore/TypeGenerator/Factories/CSPropertyFactory.h"
 #include "UnrealSharpUtilities/UnrealSharpUtils.h"
 
-FCSGeneratedClassBuilder::FCSGeneratedClassBuilder(const TSharedPtr<FCSClassMetaData>& InTypeMetaData, const TSharedPtr<FCSAssembly>& InOwningAssembly): TCSGeneratedTypeBuilder(InTypeMetaData, InOwningAssembly)
+FCSGeneratedClassBuilder::FCSGeneratedClassBuilder(const TSharedPtr<FCSClassMetaData>& InTypeMetaData): TCSGeneratedTypeBuilder(InTypeMetaData)
 {
 	RedirectClasses.Add(UDeveloperSettings::StaticClass(), UCSDeveloperSettings::StaticClass());
 }
 
-void FCSGeneratedClassBuilder::RebuildType()
+void FCSGeneratedClassBuilder::StartBuildingType()
 {
-	if (!Field->GetClassInfo().IsValid())
+	UClass* SuperClass = FCSTypeRegistry::GetClassFromName(TypeMetaData->ParentClass.Name);
+	
+	if (UClass** RedirectedClass = RedirectClasses.Find(SuperClass))
 	{
-		TSharedPtr<FCSharpClassInfo> ClassInfo = OwningAssembly->FindClassInfo(TypeMetaData->FieldName);
-		Field->SetClassInfo(ClassInfo);
-	}
-
-	UClass* CurrentSuperClass = Field->GetSuperClass();
-	if (!IsValid(CurrentSuperClass) || CurrentSuperClass->GetFName() != TypeMetaData->ParentClass.FieldName.GetName())
-	{
-		UClass* SuperClass = TypeMetaData->ParentClass.GetOwningClass();
-		if (UClass** RedirectedClass = RedirectClasses.Find(SuperClass))
-		{
-			SuperClass = *RedirectedClass;
-		}
-
-		CurrentSuperClass = SuperClass;
+		SuperClass = *RedirectedClass;
 	}
 	
-	Field->SetSuperStruct(CurrentSuperClass);
+	TSharedPtr<FCSharpClassInfo> ClassInfo = FCSTypeRegistry::GetClassInfoFromName(TypeMetaData->Name);
+	
+	Field->SetClassMetaData(ClassInfo);
+	Field->SetSuperStruct(SuperClass);
 	
 #if WITH_EDITOR
 	if (FUnrealSharpUtils::IsStandalonePIE())
 	{
-		// Since the BP-compiler is not present in standalone, we just do a normal class creation like in a packaged game.
-		// Some things still reference the Blueprint in standalone, so we need to create it.
-		CreateBlueprint(CurrentSuperClass);
-		CreateClass(CurrentSuperClass);
+		CreateBlueprint(SuperClass);
+		CreateClass(SuperClass);
 	}
 	else
 	{
-		CreateClassEditor(CurrentSuperClass);
+		CreateClassEditor(SuperClass);
 	}
 #else
-	CreateClass(CurrentSuperClass);
+	CreateClass(SuperClass);
 #endif
 }
 
 #if WITH_EDITOR
-void FCSGeneratedClassBuilder::UpdateType()
-{
-	UpdateClassDefaultObject();
-	UCSManager::Get().OnClassReloadedEvent().Broadcast(Field);
-}
-
 void FCSGeneratedClassBuilder::CreateClassEditor(UClass* SuperClass)
 {
 	CreateBlueprint(SuperClass);
-	UCSManager::Get().OnNewClassEvent().Broadcast(Field);
-}
-
-void FCSGeneratedClassBuilder::UpdateClassDefaultObject() const
-{
-	UObject* ClassDefaultObject = Field->ClassDefaultObject;
-	ClassDefaultObject->ClearFlags(RF_Public);
-	ClassDefaultObject->SetFlags(RF_Transient);
-	ClassDefaultObject->RemoveFromRoot();
-	ClassDefaultObject->Rename(nullptr, GetTransientPackage(), REN_ForceNoResetLoaders | REN_DontCreateRedirectors | REN_DoNotDirty | REN_NonTransactional);
-	ClassDefaultObject->MarkAsGarbage();
-	Field->ClassDefaultObject = nullptr;
-	
-	OwningAssembly->RemoveManagedObject(ClassDefaultObject);
-	
-	Field->GetDefaultObject(true);
+	FCSTypeRegistry::Get().GetOnNewClassEvent().Broadcast(Field);
 }
 
 void FCSGeneratedClassBuilder::CreateBlueprint(UClass* SuperClass)
@@ -93,14 +59,11 @@ void FCSGeneratedClassBuilder::CreateBlueprint(UClass* SuperClass)
 	UBlueprint* Blueprint = static_cast<UBlueprint*>(Field->ClassGeneratedBy);
 	if (!Blueprint)
 	{
-		UPackage* Package = TypeMetaData->GetOwningPackage();
-		FName BlueprintName = FCSMetaDataUtils::GetAdjustedFieldName(TypeMetaData->FieldName);
-		
-		Blueprint = NewObject<UCSBlueprint>(Package, *BlueprintName.ToString(), RF_Public | RF_Standalone);
+		UPackage* Package = UCSManager::Get().GetUnrealSharpPackage();
+		FString BlueprintName = TypeMetaData->Name.ToString();
+		Blueprint = NewObject<UCSBlueprint>(Package, *BlueprintName, RF_Public | RF_Standalone);
 		Blueprint->GeneratedClass = Field;
-		Blueprint->BlueprintNamespace = TypeMetaData->FieldName.GetNamespace().GetName();
 		Blueprint->ParentClass = SuperClass;
-		
 		Field->ClassGeneratedBy = Blueprint;
 	}
 }
@@ -149,17 +112,15 @@ void FCSGeneratedClassBuilder::CreateClass(UClass* SuperClass)
 
 FName FCSGeneratedClassBuilder::GetFieldName() const
 {
-	// Blueprint classes have a _C suffix
-	FString FieldName = TCSGeneratedTypeBuilder<FCSClassMetaData, UCSClass>::GetFieldName().ToString();
-	FieldName += TEXT("_C");
-	
+	FString FieldName = FString::Printf(TEXT("%s_C"), *TypeMetaData->Name.ToString());
 	return *FieldName;
 }
 
 void FCSGeneratedClassBuilder::ManagedObjectConstructor(const FObjectInitializer& ObjectInitializer)
 {
 	UCSClass* ManagedClass = GetFirstManagedClass(ObjectInitializer.GetClass());
-	
+	TSharedPtr<const FCSharpClassInfo> ClassInfo = ManagedClass->GetClassInfo();
+
 	//Execute the native class' constructor first.
 	UClass* NativeClass = GetFirstNativeClass(ObjectInitializer.GetClass());
 	NativeClass->ClassConstructor(ObjectInitializer);
@@ -181,8 +142,7 @@ void FCSGeneratedClassBuilder::ManagedObjectConstructor(const FObjectInitializer
 		Property->InitializeValue_InContainer(ObjectInitializer.GetObj());
 	}
 
-	TSharedPtr<FCSAssembly> OwningAssembly = ManagedClass->GetOwningAssembly();
-	OwningAssembly->CreateManagedObject(ObjectInitializer.GetObj());
+	UCSManager::Get().CreateNewManagedObject(ObjectInitializer.GetObj(), ClassInfo->TypeHandle);
 }
 
 void FCSGeneratedClassBuilder::SetupDefaultTickSettings(UObject* DefaultObject, const UClass* Class)
@@ -218,15 +178,15 @@ void FCSGeneratedClassBuilder::SetupDefaultTickSettings(UObject* DefaultObject, 
 	TickFunction->bStartWithTickEnabled = bCanTick;
 }
 
-void FCSGeneratedClassBuilder::ImplementInterfaces(UClass* ManagedClass, const TArray<FCSTypeReferenceMetaData>& Interfaces)
+void FCSGeneratedClassBuilder::ImplementInterfaces(UClass* ManagedClass, const TArray<FName>& Interfaces)
 {
-	for (const FCSTypeReferenceMetaData& InterfaceData : Interfaces)
+	for (const FName& InterfaceName : Interfaces)
 	{
-		UClass* InterfaceClass = InterfaceData.GetOwningInterface();
+		UClass* InterfaceClass = FCSTypeRegistry::GetInterfaceFromName(InterfaceName);
 
 		if (!IsValid(InterfaceClass))
 		{
-			UE_LOG(LogUnrealSharp, Warning, TEXT("Can't find interface: %s"), *InterfaceData.FieldName.GetName());
+			UE_LOG(LogUnrealSharp, Warning, TEXT("Can't find interface: %s"), *InterfaceName.ToString());
 			continue;
 		}
 
@@ -265,16 +225,10 @@ void FCSGeneratedClassBuilder::SetConfigName(UClass* ManagedClass, const TShared
 
 UCSClass* FCSGeneratedClassBuilder::GetFirstManagedClass(UClass* Class)
 {
-	if (Class->HasAnyClassFlags(CLASS_Native))
-	{
-		return nullptr;
-	}
-	
 	while (Class && !IsManagedType(Class))
 	{
 		Class = Class->GetSuperClass();
 	}
-	
 	return Cast<UCSClass>(Class);
 }
 
@@ -289,7 +243,7 @@ UClass* FCSGeneratedClassBuilder::GetFirstNativeClass(UClass* Class)
 
 UClass* FCSGeneratedClassBuilder::GetFirstNonBlueprintClass(UClass* Class)
 {
-	while (Class->HasAnyClassFlags(CLASS_CompiledFromBlueprint) && !IsManagedType(Class))
+	while (Class->HasAnyClassFlags(CLASS_CompiledFromBlueprint))
 	{
 		Class = Class->GetSuperClass();
 	}

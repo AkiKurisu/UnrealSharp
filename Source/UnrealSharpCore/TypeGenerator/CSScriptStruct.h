@@ -8,20 +8,15 @@
 
 #include "CSScriptStruct.generated.h"
 
-struct FCSharpStructInfo;
-
 UCLASS()
-class UCSScriptStruct : public UUserDefinedStruct
+class UNREALSHARPCORE_API UCSScriptStruct : public UUserDefinedStruct
 {
 	GENERATED_BODY()
 
 public:
 
-	UNREALSHARPCORE_API TSharedPtr<FCSharpStructInfo> GetStructInfo() const { return StructInfo; }
-
-	void RecreateDefaults();
-	void SetStructInfo(const TSharedPtr<FCSharpStructInfo>& InStructInfo);
-
-private:
-	TSharedPtr<FCSharpStructInfo> StructInfo;
+	void RecreateDefaults()
+	{
+		DefaultStructInstance.Recreate(this);
+	}
 };

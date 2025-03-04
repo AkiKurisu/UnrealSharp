@@ -1,34 +1,30 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using UnrealSharp.Interop;
+using UnrealSharp.Logging;
 
 namespace UnrealSharp.Plugins;
 
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct PluginsCallbacks
 {
-    public delegate* unmanaged<char*, NativeBool, nint> LoadPlugin;
+    public delegate* unmanaged<char*, nint> LoadPlugin;
     public delegate* unmanaged<char*, NativeBool> UnloadPlugin;
-    
+
     [UnmanagedCallersOnly]
-    private static nint ManagedLoadPlugin(char* assemblyPath, NativeBool isCollectible)
+    private static unsafe nint ManagedLoadPlugin(char* assemblyPath)
     {
-        WeakReference? weakRef = PluginLoader.LoadPlugin(new string(assemblyPath), isCollectible.ToManagedBool());
+        var weakRef = PluginLoader.LoadPlugin(new string(assemblyPath), true);
 
-        if (weakRef == null || !weakRef.IsAlive)
-        {
-            return IntPtr.Zero;
-        };
-
-        if (weakRef.Target is not Assembly assembly)
-        {
-            return IntPtr.Zero;
-        }
+        if (weakRef == null) return default;
+        if (!weakRef.IsAlive) return default;
+        if (weakRef.Target is not Assembly assembly) return default;
 
         return GCHandle.ToIntPtr(GcHandleUtilities.AllocateWeakPointer(assembly));
     }
 
     [UnmanagedCallersOnly]
-    private static NativeBool ManagedUnloadPlugin(char* assemblyPath)
+    private static unsafe NativeBool ManagedUnloadPlugin(char* assemblyPath)
     {
         string assemblyPathStr = new(assemblyPath);
         return PluginLoader.UnloadPlugin(assemblyPathStr).ToNativeBool();
@@ -36,7 +32,7 @@ public unsafe struct PluginsCallbacks
 
     public static PluginsCallbacks Create()
     {
-        return new PluginsCallbacks
+        return new ()
         {
             LoadPlugin = &ManagedLoadPlugin,
             UnloadPlugin = &ManagedUnloadPlugin,

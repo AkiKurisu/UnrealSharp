@@ -10,7 +10,9 @@ UCLASS()
 class UNREALSHARPCORE_API UCSClassPropertyGenerator : public UCSPropertyGenerator
 {
 	GENERATED_BODY()
+
 protected:
+
 	// Begin UCSPropertyGenerator interface
 	virtual ECSPropertyType GetPropertyType() const override { return ECSPropertyType::Class; }
 	virtual FFieldClass* GetPropertyClass() override { return FClassProperty::StaticClass(); }

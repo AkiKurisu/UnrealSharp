@@ -1,20 +1,14 @@
 ﻿#include "UnrealSharpUtils.h"
 
-FName FUnrealSharpUtils::GetNamespace(const UObject* Object)
+FString FUnrealSharpUtils::GetNamespace(const UObject* Object)
 {
 	FName PackageName = GetModuleName(Object);
 	return GetNamespace(PackageName);
 }
 
-FName FUnrealSharpUtils::GetNamespace(const FName PackageName)
+FString FUnrealSharpUtils::GetNamespace(const FName PackageName)
 {
-	return *FString::Printf(TEXT("%s.%s"), TEXT("UnrealSharp"), *PackageName.ToString());
-}
-
-FName FUnrealSharpUtils::GetNativeFullName(const UField* Object)
-{
-	FName Namespace = GetNamespace(Object);
-	return *FString::Printf(TEXT("%s.%s"), *Namespace.ToString(), *Object->GetName());
+	return FString::Printf(TEXT("%s.%s"), TEXT("UnrealSharp"), *PackageName.ToString());
 }
 
 FName FUnrealSharpUtils::GetModuleName(const UObject* Object)

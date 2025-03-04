@@ -2,6 +2,7 @@
 
 #include "BlueprintActionDatabase.h"
 #include "ISettingsModule.h"
+#include "UnrealSharpCompiler.h"
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
 #include "TypeGenerator/CSBlueprint.h"
@@ -11,11 +12,9 @@
 #include "TypeGenerator/Factories/CSPropertyFactory.h"
 #include "TypeGenerator/Factories/PropertyGenerators/CSPropertyGenerator.h"
 #include "TypeGenerator/Register/CSGeneratedClassBuilder.h"
-#include "TypeGenerator/Register/CSMetaDataUtils.h"
 #include "TypeGenerator/Register/CSSimpleConstructionScriptBuilder.h"
 #include "TypeGenerator/Register/MetaData/CSClassMetaData.h"
 #include "TypeGenerator/Register/TypeInfo/CSClassInfo.h"
-#include "UnrealSharpEditor/CSUnrealSharpEditorSettings.h"
 
 FCSCompilerContext::FCSCompilerContext(UCSBlueprint* Blueprint, FCompilerResultsLog& InMessageLog, const FKismetCompilerOptions& InCompilerOptions):
 	FKismetCompilerContext(Blueprint, InMessageLog, InCompilerOptions)
@@ -62,7 +61,7 @@ void FCSCompilerContext::OnPostCDOCompiled(const UObject::FPostCDOCompiledContex
 
 void FCSCompilerContext::CreateClassVariablesFromBlueprint()
 {
-	TSharedPtr<FCSharpClassInfo> ClassInfo = GetMainClass()->GetClassInfo();
+	TSharedRef<const FCSharpClassInfo> ClassInfo = GetMainClass()->GetClassInfo();
 	const TArray<FCSPropertyMetaData>& Properties = ClassInfo->TypeMetaData->Properties;
 
 	NewClass->PropertyGuids.Empty(Properties.Num());
@@ -162,7 +161,7 @@ UCSClass* FCSCompilerContext::GetMainClass() const
 	return CastChecked<UCSClass>(Blueprint->GeneratedClass);
 }
 
-TSharedPtr<const FCSharpClassInfo> FCSCompilerContext::GetClassInfo() const
+TSharedRef<const FCSharpClassInfo> FCSCompilerContext::GetClassInfo() const
 {
 	return GetMainClass()->GetClassInfo();
 }
@@ -210,10 +209,10 @@ void FCSCompilerContext::ApplyMetaData()
 	static FString DisplayNameKey = TEXT("DisplayName");
 	if (!NewClass->HasMetaData(*DisplayNameKey))
 	{
-		NewClass->SetMetaData(*DisplayNameKey, *Blueprint->GetName());
+		NewClass->SetMetaData(*DisplayNameKey, *TypeMetaData->Name.ToString());
 	}
 		
-	if (GetDefault<UCSUnrealSharpEditorSettings>()->bSuffixGeneratedTypes)
+	if (GetDefault<UCSUnrealSharpSettings>()->bSuffixGeneratedTypes)
 	{
 		FString DisplayName = NewClass->GetMetaData(*DisplayNameKey);
 		DisplayName += TEXT(" (C#)");

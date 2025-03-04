@@ -2,7 +2,7 @@
 
 namespace UnrealSharpWeaver.MetaData;
 
-public class StructMetaData : TypeReferenceMetadata
+public class StructMetaData : BaseMetaData
 {
     public List<PropertyMetaData> Fields { get; set; }
     public StructFlags StructFlags { get; set; }

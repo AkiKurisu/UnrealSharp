@@ -21,7 +21,7 @@ void* UUObjectExporter::CreateNewObject(UObject* Outer, UClass* Class, UObject* 
 	}
 	
 	UObject* NewCSharpObject = NewObject<UObject>(Outer, Class, NAME_None, RF_NoFlags, Template);
-	return UCSManager::Get().FindManagedObject(NewCSharpObject).GetPointer();
+	return UCSManager::Get().FindManagedObject(NewCSharpObject).GetIntPtr();
 }
 
 void* UUObjectExporter::GetTransientPackage()
@@ -33,7 +33,7 @@ void* UUObjectExporter::GetTransientPackage()
 		return nullptr;
 	}
 
-	return UCSManager::Get().FindManagedObject(TransientPackage).GetPointer();
+	return UCSManager::Get().FindManagedObject(TransientPackage).GetIntPtr();
 }
 
 void UUObjectExporter::NativeGetName(UObject* Object, FName& OutName)
@@ -45,6 +45,7 @@ void UUObjectExporter::InvokeNativeFunction(UObject* NativeObject, UFunction* Na
 {
 	FFrame NewStack(NativeObject, NativeFunction, Params, nullptr, NativeFunction->ChildProperties);
 	NewStack.CurrentNativeFunction = NativeFunction;
+	const bool bHasReturnParam = NativeFunction->ReturnValueOffset != MAX_uint16;
 	
 	if (NativeFunction->HasAllFunctionFlags(FUNC_Net))
 	{
@@ -94,8 +95,7 @@ void UUObjectExporter::InvokeNativeFunction(UObject* NativeObject, UFunction* Na
 			(*LastOut)->NextOutParm = nullptr;
 		}
 	}
-
-	const bool bHasReturnParam = NativeFunction->ReturnValueOffset != MAX_uint16;
+	
 	uint8* ReturnValueAddress = bHasReturnParam ? Params + NativeFunction->ReturnValueOffset : nullptr;
 	NativeFunction->Invoke(NativeObject, NewStack, ReturnValueAddress);
 }
@@ -118,7 +118,7 @@ void* UUObjectExporter::GetWorld_Internal(UObject* Object)
 	}
 
 	UWorld* World = Object->GetWorld();
-	return UCSManager::Get().FindManagedObject(World).GetPointer();
+	return UCSManager::Get().FindManagedObject(World).GetIntPtr();
 }
 
 uint32 UUObjectExporter::GetUniqueID(UObject* Object)

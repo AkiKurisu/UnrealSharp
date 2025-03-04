@@ -36,10 +36,6 @@ public:
 
 	UFUNCTION(meta = (ScriptMethod))
 	static void PostActorConstruction(AActor* Actor);
-
-	UFUNCTION(meta = (ScriptMethod))
-	static FURL WorldURL(const UObject* WorldContextObject);
-
 	
 private:
 	static AActor* SpawnActor_Internal(const UObject* WorldContextObject, const TSubclassOf<AActor>& Class, const FTransform& Transform, const FCSSpawnActorParameters& SpawnParameters, bool bDeferConstruction);

@@ -10,7 +10,7 @@ public class ClassMetaData : TypeReferenceMetadata
     public List<PropertyMetaData>? Properties { get; set; }
     public List<FunctionMetaData> Functions { get; set; }
     public List<FunctionMetaData> VirtualFunctions { get; set; }
-    public List<TypeReferenceMetadata> Interfaces { get; set; }
+    public List<string> Interfaces { get; set; }
     public string ConfigCategory { get; set; } 
     public ClassFlags ClassFlags { get; set; }
     
@@ -144,16 +144,17 @@ public class ClassMetaData : TypeReferenceMetadata
         
         Interfaces = [];
         
-        foreach (InterfaceImplementation? typeInterface in ClassDefinition.Interfaces)
+        foreach (var typeInterface in ClassDefinition.Interfaces)
         {
             TypeDefinition interfaceType = typeInterface.InterfaceType.Resolve();
 
-            if (interfaceType == WeaverHelper.IInterfaceType || !interfaceType.IsUInterface())
+            if (interfaceType == WeaverHelper.IInterfaceType || !WeaverHelper.IsUInterface(interfaceType))
             {
                 continue;
             }
-            
-            Interfaces.Add(new TypeReferenceMetadata(interfaceType));
+
+            string interfaceNoPrefix = WeaverHelper.GetEngineName(interfaceType);
+            Interfaces.Add(interfaceNoPrefix);
         }
     }
     

@@ -92,9 +92,7 @@ public static class StaticConstructorUtilities
         generatorStringBuilder.OpenBrace();
         
         string type = classObj != null ? "Class" : "Struct";
-        
-        string engineName = structObj.EngineName;
-        generatorStringBuilder.AppendLine($"{nativeClassPtrDeclaration}NativeClassPtr = {ExporterCallbacks.CoreUObjectCallbacks}.CallGetNative{type}FromName({structObj.ExportGetAssemblyName()}, \"{structObj.GetNamespace()}\", \"{engineName}\");");
+        generatorStringBuilder.AppendLine($"{nativeClassPtrDeclaration}NativeClassPtr = {ExporterCallbacks.CoreUObjectCallbacks}.CallGetNative{type}FromName(\"{structObj.EngineName}\");");
         
         ExportPropertiesStaticConstructor(generatorStringBuilder, exportedProperties);
         ExportGetSetBackedPropertyStaticConstructor(generatorStringBuilder, getSetBackedProperties);

@@ -1,4 +1,5 @@
 #include "CSObjectPropertyGenerator.h"
+#include "TypeGenerator/Register/CSTypeRegistry.h"
 #include "TypeGenerator/Register/MetaData/CSDefaultComponentMetaData.h"
 #include "TypeGenerator/Register/MetaData/CSObjectMetaData.h"
 
@@ -25,7 +26,7 @@ FProperty* UCSObjectPropertyGenerator::CreateProperty(UField* Outer, const FCSPr
 	FObjectProperty* Property = static_cast<FObjectProperty*>(Super::CreateProperty(Outer, PropertyMetaData));
 	
 	TSharedPtr<FCSObjectMetaData> ObjectMetaData = PropertyMetaData.GetTypeMetaData<FCSObjectMetaData>();
-	UClass* Class = ObjectMetaData->InnerType.GetOwningClass();
+	UClass* Class = FCSTypeRegistry::GetClassFromName(ObjectMetaData->InnerType.Name);
 
 	Property->SetPropertyClass(Class);
 	

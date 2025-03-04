@@ -40,10 +40,15 @@ bool FCSProcHelper::InvokeCommand(const FString& ProgramPath, const FString& Arg
 
 	while (FPlatformProcess::IsProcRunning(ProcHandle))
 	{
+		bool bProcessFinished = FPlatformProcess::GetProcReturnCode(ProcHandle, &OutReturnCode);
 		Output += FPlatformProcess::ReadPipe(ReadPipe);
+
+		if (bProcessFinished)
+		{
+			break;
+		}
 	}
 	
-	FPlatformProcess::GetProcReturnCode(ProcHandle, &OutReturnCode);
 	FPlatformProcess::CloseProc(ProcHandle);
 	FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
 
@@ -88,7 +93,7 @@ bool FCSProcHelper::InvokeUnrealSharpBuildTool(const FString& BuildAction, const
 
 	int32 ReturnCode = 0;
 	FString Output;
-	FString WorkingDirectory = GetPluginAssembliesPath();
+	FString WorkingDirectory = GetAssembliesPath();
 	return InvokeCommand(DotNetPath, Args, ReturnCode, Output, &WorkingDirectory);
 }
 
@@ -136,11 +141,11 @@ FString FCSProcHelper::GetRuntimeHostPath()
 	return GetLatestHostFxrPath();
 #else
 #ifdef _WIN32
-	return FPaths::Combine(GetPluginAssembliesPath(), HOSTFXR_WINDOWS);
+	return FPaths::Combine(GetAssembliesPath(), HOSTFXR_WINDOWS);
 #elif defined(__APPLE__)
-	return FPaths::Combine(GetPluginAssembliesPath(), HOSTFXR_MAC);
+	return FPaths::Combine(GetAssembliesPath(), HOSTFXR_MAC);
 #else
-	return FPaths::Combine(GetPluginAssembliesPath(), HOSTFXR_LINUX);
+	return FPaths::Combine(GetAssembliesPath(), HOSTFXR_LINUX);
 #endif
 #endif
 }
@@ -151,7 +156,7 @@ FString FCSProcHelper::GetPathToSolution()
 	return SolutionPath;
 }
 
-FString FCSProcHelper::GetPluginAssembliesPath()
+FString FCSProcHelper::GetAssembliesPath()
 {
 #if WITH_EDITOR
 	return FPaths::Combine(GetPluginDirectory(), "Binaries", "Managed");
@@ -160,24 +165,14 @@ FString FCSProcHelper::GetPluginAssembliesPath()
 #endif
 }
 
-FString FCSProcHelper::GetUnrealSharpPluginsPath()
+FString FCSProcHelper::GetUnrealSharpLibraryPath()
 {
-	return GetPluginAssembliesPath() / "UnrealSharp.Plugins.dll";
-}
-
-FString FCSProcHelper::GetUnrealSharpCorePath()
-{
-	return GetPluginAssembliesPath() / "UnrealSharp.dll";
-}
-
-FString FCSProcHelper::GetGlueLibraryPath()
-{
-	return GetUserAssemblyDirectory() / "ProjectGlue.dll";
+	return GetAssembliesPath() / "UnrealSharp.Plugins.dll";
 }
 
 FString FCSProcHelper::GetRuntimeConfigPath()
 {
-	return GetPluginAssembliesPath() / "UnrealSharp.runtimeconfig.json";
+	return GetAssembliesPath() / "UnrealSharp.runtimeconfig.json";
 }
 
 FString FCSProcHelper::GetUserAssemblyDirectory()
@@ -279,7 +274,7 @@ void FCSProcHelper::GetAllAssemblyPaths(TArray<FString>& AssemblyPaths)
 
 FString FCSProcHelper::GetUnrealSharpBuildToolPath()
 {
-	return FPaths::ConvertRelativePathToFull(GetPluginAssembliesPath() / "UnrealSharpBuildTool.dll");
+	return FPaths::ConvertRelativePathToFull(GetAssembliesPath() / "UnrealSharpBuildTool.dll");
 }
 
 FString FCSProcHelper::GetDotNetDirectory()

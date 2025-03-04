@@ -1,116 +1,45 @@
 ﻿#pragma once
 
 #include "CSManagedGCHandle.h"
-#include "TypeGenerator/Register/MetaData/CSTypeReferenceMetaData.h"
 
 #if !defined(_WIN32)
 #define __stdcall
 #endif
 
-struct FCSManagedMethod;
-class UCSClass;
-struct FCSharpClassInfo;
-struct FCSharpInterfaceInfo;
-struct FCSharpEnumInfo;
-struct FCSharpStructInfo;
-
-/**
- * Represents a managed assembly.
- * This class is responsible for loading and unloading the assembly, as well as managing all types that are defined in the C# assembly.
- */
-struct FCSAssembly final : TSharedFromThis<FCSAssembly>, FUObjectArray::FUObjectDeleteListener
+struct FCSManagedPluginCallbacks
 {
-	explicit FCSAssembly(const FString& AssemblyPath);
-
-	UNREALSHARPCORE_API bool LoadAssembly(bool bIsCollectible = true);
-	UNREALSHARPCORE_API bool UnloadAssembly();
-	UNREALSHARPCORE_API bool IsValidAssembly() const { return AssemblyHandle.IsValid() && !AssemblyHandle->IsNull(); }
-
-	static UPackage* GetPackage(const FCSNamespace Namespace);
-
-	FName GetAssemblyName() const { return AssemblyName; }
-	const FString& GetAssemblyPath() const { return AssemblyPath; }
-
-	TSharedPtr<FGCHandle> TryFindTypeHandle(const FCSFieldName& FieldName);
-	TSharedPtr<FGCHandle> TryFindTypeHandle(const UClass* Class);
-
-	FCSManagedMethod GetManagedMethod(const TSharedPtr<FGCHandle>& TypeHandle, const FString& MethodName);
-	FCSManagedMethod GetManagedMethod(const UCSClass* Class, const FString& MethodName);
+	using LoadPluginCallback = GCHandleIntPtr(__stdcall*)(const TCHAR*);
+	using UnloadPluginCallback = bool(__stdcall*)(const TCHAR*);
 	
-	TSharedPtr<FCSharpClassInfo> FindOrAddClassInfo(UClass* Class);
-	TSharedPtr<FCSharpClassInfo> FindOrAddClassInfo(const FCSFieldName& ClassName);
-	
-	TSharedPtr<FCSharpClassInfo> FindClassInfo(const FCSFieldName& ClassName) const;
+	LoadPluginCallback LoadPlugin = nullptr;
+	UnloadPluginCallback UnloadPlugin = nullptr;
+};
 
-	TSharedPtr<FCSharpStructInfo> FindStructInfo(const FCSFieldName& StructName) const;
-	TSharedPtr<FCSharpEnumInfo> FindEnumInfo(const FCSFieldName& EnumName) const;
-	TSharedPtr<FCSharpInterfaceInfo> FindInterfaceInfo(const FCSFieldName& InterfaceName) const;
-	
-	UClass* FindClass(const FCSFieldName& FieldName) const;
-	UScriptStruct* FindStruct(const FCSFieldName& StructName) const;
-	UEnum* FindEnum(const FCSFieldName& EnumName) const;
-	UClass* FindInterface(const FCSFieldName& InterfaceName) const;
-
-	// Creates a C# counterpart for the given UObject.
-	FGCHandle* CreateManagedObject(UObject* Object);
-
-	// Removes the C# counterpart for the given UObject, if it exists.
-	void RemoveManagedObject(const UObjectBase* Object);
-
-	// Finds the object handle for the given UObject.
-	FGCHandle FindManagedObject(UObject* Object);
-
-	// Add a class that is waiting for its parent class to be loaded before it can be created.
-	void AddPendingClass(const FCSTypeReferenceMetaData& ParentClass, FCSharpClassInfo* NewClass);
-
-private:
-	
-	bool ProcessMetadata();
-
-	void BuildUnrealTypes();
-
-	void OnModulesChanged(FName InModuleName, EModuleChangeReason InModuleChangeReason);
-	void OnEnginePreExit();
-
-	template<typename T>
-	T* TryFindField(const FCSFieldName FieldName) const
+struct UNREALSHARPCORE_API FCSAssembly
+{
+	explicit FCSAssembly(const FString& InAssemblyPath)
 	{
-		UPackage* Package = FieldName.GetPackage();
+		AssemblyPath = FPaths::ConvertRelativePathToFull(InAssemblyPath);
 
-		if (!Package)
-		{
-			return nullptr;
-		}
-
-		return FindObject<T>(Package, *FieldName.GetName());
+#if defined(_WIN32)
+		// Replace forward slashes with backslashes
+		AssemblyPath.ReplaceInline(TEXT("/"), TEXT("\\"));
+#endif
+		
+		AssemblyName = FPaths::GetBaseFilename(AssemblyPath);
 	}
 
-	// UObjectArray listener interface
-	virtual void NotifyUObjectDeleted(const UObjectBase* Object, int32 Index) override;
-	virtual void OnUObjectArrayShutdown() override;
-	// End of interface
+	bool Load();
+	bool Unload() const;
 
-	// All Unreal types that are defined in this assembly.
-	TMap<FCSFieldName, TSharedPtr<FCSharpClassInfo>> Classes;
-	TMap<FCSFieldName, TSharedPtr<FCSharpStructInfo>> Structs;
-	TMap<FCSFieldName, TSharedPtr<FCSharpEnumInfo>> Enums;
-	TMap<FCSFieldName, TSharedPtr<FCSharpInterfaceInfo>> Interfaces;
+	bool IsAssemblyValid() const;
 	
-	// All handles allocated by this assembly. Handles to types, methods, objects.
-	TArray<TSharedPtr<FGCHandle>> AllocatedHandles;
+	const GCHandleIntPtr& GetAssemblyHandle() const { return Assembly.Handle; }
+	const FString& GetAssemblyName() const { return AssemblyName; }
+	const FString& GetAssemblyPath() const { return AssemblyPath; }
 
-	// Handles to all UClasses types that are defined in this assembly.
-	TMap<FCSFieldName, TSharedPtr<FGCHandle>> ClassHandles;
-
-	// Handles to all active UObjects that has a C# counterpart.
-	TMap<const UObjectBase*, FGCHandle> ObjectHandles;
-
-	// Pending classes that are waiting for their parent class to be loaded by the engine.
-	TMap<FCSTypeReferenceMetaData, TSet<FCSharpClassInfo*>> PendingClasses;
-
-	// Handle to the Assembly object in C#.
-	TSharedPtr<FGCHandle> AssemblyHandle;
-	
+private:
+	FGCHandle Assembly;
 	FString AssemblyPath;
-	FName AssemblyName;
+	FString AssemblyName;
 };

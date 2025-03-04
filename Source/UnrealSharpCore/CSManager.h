@@ -6,30 +6,15 @@
 #include "CSManagedCallbacksCache.h"
 #include "CSManager.generated.h"
 
-struct FCSNamespace;
 struct FCSTypeReferenceMetaData;
-
-struct FCSManagedPluginCallbacks
-{
-	using LoadPluginCallback = GCHandleIntPtr(__stdcall*)(const TCHAR*, bool);
-	using UnloadPluginCallback = bool(__stdcall*)(const TCHAR*);
-	
-	LoadPluginCallback LoadPlugin = nullptr;
-	UnloadPluginCallback UnloadPlugin = nullptr;
-};
 
 using FInitializeRuntimeHost = bool (*)(const TCHAR*, const TCHAR*, FCSManagedPluginCallbacks*, FCSManagedCallbacks::FManagedCallbacks*, const void*);
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnManagedAssemblyLoaded, const FName&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnManagedAssemblyLoaded, const FString&);
 DECLARE_MULTICAST_DELEGATE(FOnAssembliesReloaded);
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FCSClassEvent, UClass*);
-DECLARE_MULTICAST_DELEGATE_OneParam(FCSStructEvent, UScriptStruct*);
-DECLARE_MULTICAST_DELEGATE_OneParam(FCSInterfaceEvent, UClass*);
-DECLARE_MULTICAST_DELEGATE_OneParam(FCSEnumEvent, UEnum*);
-
 UCLASS()
-class UNREALSHARPCORE_API UCSManager : public UObject
+class UNREALSHARPCORE_API UCSManager : public UObject, public FUObjectArray::FUObjectDeleteListener
 {
 	GENERATED_BODY()
 public:
@@ -37,26 +22,21 @@ public:
 	static UCSManager& GetOrCreate();
 	static UCSManager& Get();
 	static void Shutdown();
+	
+	UPackage* GetUnrealSharpPackage() const { return UnrealSharpPackage; }
 
-	// The outermost package for all managed packages. If namespace support is off, this is the only package that will be used.
-	UPackage* GetGlobalUnrealSharpPackage() const { return GlobalUnrealSharpPackage; }
-	UPackage* FindManagedPackage(FCSNamespace Namespace);
+	bool LoadAllUserAssemblies();
 	
-	TSharedPtr<FCSAssembly> LoadAssemblyByPath(const FString& AssemblyPath, bool bIsCollectible = true);
+	TSharedPtr<FCSAssembly> LoadAssembly(const FString& AssemblyPath);
+	bool UnloadAssembly(const FString& AssemblyName);
 
-	// Load an assembly by name that exists in the ProjectRoot/Binaries/Managed folder
-	TSharedPtr<FCSAssembly> LoadUserAssemblyByName(const FName AssemblyName, bool bIsCollectible = true);
+	FGCHandle CreateNewManagedObject(UObject* Object, UClass* Class);
+	FGCHandle CreateNewManagedObject(UObject* Object, uint8* TypeHandle);
+	FGCHandle FindManagedObject(UObject* Object);
 
-	// Load an assembly by name that exists in the UnrealSharp/Binaries/Managed folder
-	TSharedPtr<FCSAssembly> LoadPluginAssemblyByName(const FName AssemblyName, bool bIsCollectible = true);
-	
-	TSharedPtr<FCSAssembly> FindOwningAssembly(UClass* Class) const;
-	TSharedPtr<FCSAssembly> FindOwningAssembly(const UObject* Object) const;
-	
-	TSharedPtr<FCSAssembly> FindAssembly(FName AssemblyName) const;
-	TSharedPtr<FCSAssembly> FindOrLoadAssembly(FName AssemblyName);
-	
-	FGCHandle FindManagedObject(UObject* Object) const;
+	uint8* GetTypeHandle(uint8* AssemblyHandle, const FString& Namespace, const FString& TypeName) const;
+	uint8* GetTypeHandle(const FString& AssemblyName, const FString& Namespace, const FString& TypeName) const;
+	uint8* GetTypeHandle(const FCSTypeReferenceMetaData& TypeMetaData) const;
 
 	void SetCurrentWorldContext(UObject* WorldContext) { CurrentWorldContext = WorldContext; }
 	UObject* GetCurrentWorldContext() const { return CurrentWorldContext.Get(); }
@@ -65,25 +45,6 @@ public:
 
 	FOnManagedAssemblyLoaded& OnManagedAssemblyLoadedEvent() { return OnManagedAssemblyLoaded; }
 	FOnAssembliesReloaded& OnAssembliesLoadedEvent() { return OnAssembliesLoaded; }
-
-#if WITH_EDITOR
-	FCSClassEvent& OnNewClassEvent() { return OnNewClass; }
-	FCSStructEvent& OnNewStructEvent() { return OnNewStruct; }
-	FCSInterfaceEvent& OnNewInterfaceEvent() { return OnNewInterface; }
-	FCSEnumEvent& OnNewEnumEvent() { return OnNewEnum; }
-
-	FCSInterfaceEvent& OnInterfaceReloadedEvent() { return OnInterfaceReloaded; }
-	FCSClassEvent& OnClassReloadedEvent() { return OnClassReloaded; }
-	FCSStructEvent& OnStructReloadedEvent() { return OnStructReloaded; }
-	FCSEnumEvent& OnEnumReloadedEvent() { return OnEnumReloaded; }
-		
-	FSimpleMulticastDelegate& OnProcessedPendingClassesEvent() { return OnProcessedPendingClasses; }
-#endif
-	
-	void ForEachManagedPackage(const TFunction<void(UPackage*)>& Callback) const;
-	void ForEachManagedField(const TFunction<void(UObject*)>& Callback) const;
-	bool IsManagedPackage(const UPackage* Package) const;
-	bool IsManagedField(const UObject* Field) const;
 
 private:
 
@@ -94,39 +55,30 @@ private:
 	
 	bool LoadRuntimeHost();
 	bool InitializeRuntime();
+	
+	void RemoveManagedObject(const UObjectBase* Object);
 
-	bool LoadUserAssemblies();
+	// Begin FUObjectArray::FUObjectDeleteListener interface
+	virtual void NotifyUObjectDeleted(const UObjectBase *Object, int32 Index) override;
+	virtual void OnUObjectArrayShutdown() override;
+	// End FUObjectArray::FUObjectDeleteListener interface
+
+	void OnEnginePreExit();
 
 	static UCSManager* Instance;
 
 	UPROPERTY()
-	TObjectPtr<UPackage> GlobalUnrealSharpPackage;
+	TObjectPtr<UPackage> UnrealSharpPackage;
 
 	UPROPERTY()
-	TSet<TObjectPtr<UPackage>> AllPackages;
- 
-	UPROPERTY()
 	TWeakObjectPtr<UObject> CurrentWorldContext;
-	
-	TMap<FName, TSharedPtr<FCSAssembly>> LoadedAssemblies;
+
+	TMap<const UObjectBase*, FGCHandle> UnmanagedToManagedMap;
+	TMap<FName, TSharedPtr<FCSAssembly>> LoadedPlugins;
 
 	FOnManagedAssemblyLoaded OnManagedAssemblyLoaded;
 	FOnAssembliesReloaded OnAssembliesLoaded;
 
-#if WITH_EDITORONLY_DATA
-	FCSClassEvent OnNewClass;
-	FCSStructEvent OnNewStruct;
-	FCSInterfaceEvent OnNewInterface;
-	FCSEnumEvent OnNewEnum;
-
-	FCSClassEvent OnClassReloaded;
-	FCSStructEvent OnStructReloaded;
-	FCSInterfaceEvent OnInterfaceReloaded;
-	FCSEnumEvent OnEnumReloaded;
-
-	FSimpleMulticastDelegate OnProcessedPendingClasses;
-#endif
-	
 	FCSManagedPluginCallbacks ManagedPluginsCallbacks;
 	
 	//.NET Core Host API

@@ -1,18 +1,10 @@
 ﻿#include "CSGeneratedInterfaceBuilder.h"
-
-#include "CSManager.h"
+#include "CSTypeRegistry.h"
 #include "UnrealSharpCore/TypeGenerator/Factories/CSFunctionFactory.h"
 
-void FCSGeneratedInterfaceBuilder::RebuildType()
+void FCSGeneratedInterfaceBuilder::StartBuildingType()
 {
 	Field->PurgeClass(true);
-
-	if (!Field->GetInterfaceInfo().IsValid())
-	{
-		TSharedPtr<FCSharpInterfaceInfo> InterfaceInfo = OwningAssembly->FindInterfaceInfo(TypeMetaData->FieldName);
-		Field->SetInterfaceInfo(InterfaceInfo);
-	}
-	
 	Field->SetSuperStruct(UInterface::StaticClass());
 	Field->ClassFlags |= CLASS_Interface;
 	
@@ -26,13 +18,6 @@ void FCSGeneratedInterfaceBuilder::RebuildType()
 	Field->GetDefaultObject();
 
 #if WITH_EDITOR
-	UCSManager::Get().OnNewInterfaceEvent().Broadcast(Field);
+	FCSTypeRegistry::Get().GetOnNewInterfaceEvent().Broadcast(Field);
 #endif
 }
-
-#if WITH_EDITOR
-void FCSGeneratedInterfaceBuilder::UpdateType()
-{
-	UCSManager::Get().OnInterfaceReloadedEvent().Broadcast(Field);
-}
-#endif
