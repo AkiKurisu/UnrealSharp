@@ -137,7 +137,7 @@ public static class FunctionUtilities
         return toTypeIndex == -1 ? function.SourceName : function.SourceName.Substring(toTypeIndex + 5);
     }
     
-    private static bool IsBlueprintAccessor(this UhtFunction function, string accessorType, Func<UhtProperty, UhtFunction?> getBlueprintAccessor)
+    private static bool IsBlueprintAccessor(this UhtFunction function, UhtClass outerClass, string accessorType, Func<UhtProperty, UhtFunction?> getBlueprintAccessor)
     {
         if (function.Properties.Count() != 1 )
         {
@@ -148,13 +148,8 @@ public static class FunctionUtilities
         {
             return true;
         }
-
-        if (function.Outer is not UhtClass classObj)
-        {
-            return false;
-        }
         
-        foreach (UhtProperty property in classObj.Properties)
+        foreach (UhtProperty property in outerClass.Properties)
         {
             if (function != getBlueprintAccessor(property)! || !function.VerifyBlueprintAccessor(property))
             {
@@ -178,10 +173,10 @@ public static class FunctionUtilities
         return firstProperty.IsSameType(property);
     }
     
-    public static bool IsNativeAccessor(this UhtFunction function, GetterSetterMode accessorType)
+    public static bool IsNativeAccessor(this UhtFunction function, UhtClass outer, GetterSetterMode accessorType)
     {
-        UhtClass classObj = (function.Outer as UhtClass)!;
-        foreach (UhtProperty property in classObj.Properties)
+        var properties = outer.Properties.ToArray();
+        foreach (UhtProperty property in properties)
         {
             if (accessorType + property.EngineName == function.SourceName)
             {
@@ -198,26 +193,26 @@ public static class FunctionUtilities
         return false;
     }
     
-    public static bool IsAnyGetter(this UhtFunction function)
+    public static bool IsAnyGetter(this UhtFunction function, UhtClass outer)
     {
         if (function.Properties.Count() != 1)
         {
             return false;
         }
         
-        return function.IsBlueprintAccessor("BlueprintGetter", property => property.GetBlueprintGetter()) 
-               || function.IsNativeAccessor(GetterSetterMode.Get);
+        return function.IsBlueprintAccessor(outer, "BlueprintGetter", property => property.GetBlueprintGetter()) 
+               || function.IsNativeAccessor(outer, GetterSetterMode.Get);
     }
 
-    public static bool IsAnySetter(this UhtFunction function)
+    public static bool IsAnySetter(this UhtFunction function, UhtClass outer)
     {
         if (function.Properties.Count() != 1)
         {
             return false;
         }
         
-        return function.IsBlueprintAccessor("BlueprintSetter", property => property.GetBlueprintSetter()) 
-               || function.IsNativeAccessor(GetterSetterMode.Set);
+        return function.IsBlueprintAccessor(outer, "BlueprintSetter", property => property.GetBlueprintSetter()) 
+               || function.IsNativeAccessor(outer, GetterSetterMode.Set);
     }
 
     public static bool HasGenericTypeSupport(this UhtFunction function)
@@ -227,8 +222,7 @@ public static class FunctionUtilities
         var propertyDOTEngineName = function.GetMetadata("DeterminesOutputType");
 
         var propertyDeterminingOutputType = function.Properties
-            .Where(p => p.EngineName == propertyDOTEngineName)
-            .FirstOrDefault();
+            .FirstOrDefault(p => p.EngineName == propertyDOTEngineName);
 
         if (propertyDeterminingOutputType == null) return false;
 
@@ -238,8 +232,7 @@ public static class FunctionUtilities
         if (function.HasMetadata("DynamicOutputParam"))
         {
             var propertyDynamicOutputParam = function.Properties
-                .Where(p => p.EngineName == function.GetMetadata("DynamicOutputParam"))
-                .FirstOrDefault();
+                .FirstOrDefault(p => p.EngineName == function.GetMetadata("DynamicOutputParam"));
 
             if (propertyDynamicOutputParam == null) return false;
 
@@ -262,8 +255,7 @@ public static class FunctionUtilities
         if (!function.HasMetadata("DeterminesOutputType")) return string.Empty;
 
         var propertyDeterminingOutputType = function.Properties
-            .Where(p => p.EngineName == function.GetMetadata("DeterminesOutputType"))
-            .FirstOrDefault();
+            .FirstOrDefault(p => p.EngineName == function.GetMetadata("DeterminesOutputType"));
 
         return propertyDeterminingOutputType?.GetGenericManagedType() ?? string.Empty;
     }
