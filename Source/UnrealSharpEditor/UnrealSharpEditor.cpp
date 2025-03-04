@@ -866,7 +866,7 @@ void FUnrealSharpEditorModule::ProcessGameplayTags()
 		}
 		
 		const FString TagName = RowTag.Tag.ToString();
-		const FString TagNameVariable = TagName.Replace(TEXT("."), TEXT("_"));
+		const FString TagNameVariable = TagName.Replace(TEXT("."), TEXT("_")).Replace(TEXT("-"), TEXT("_"));
 		ScriptBuilder.AppendLine(FString::Printf(TEXT("public static readonly FGameplayTag %s = new(\"%s\");"), *TagNameVariable, *TagName));
 		TagNames.Add(RowTag.Tag);
 	};
