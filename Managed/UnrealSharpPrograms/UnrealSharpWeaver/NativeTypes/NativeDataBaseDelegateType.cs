@@ -61,7 +61,7 @@ public abstract class NativeDataBaseDelegateType : NativeDataSimpleType
     protected TypeReference GetWrapperType(TypeReference delegateType)
     {
         TypeDefinition delegateTypeDefinition = delegateType.Resolve();
-        return WeaverHelper.FindTypeInAssembly(delegateTypeDefinition.Module.Assembly, $"U{delegateType.Name}", delegateType.Namespace)!;
+        return WeaverHelper.FindTypeInAssembly(delegateTypeDefinition.Module.Assembly, $"F{delegateType.Name}", delegateType.Namespace)!;
     }
     
 }
