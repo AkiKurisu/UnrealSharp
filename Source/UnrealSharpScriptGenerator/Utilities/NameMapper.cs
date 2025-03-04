@@ -233,11 +233,9 @@ public static class NameMapper
         switch (nameType)
         {
             case ENameType.Parameter:
-                strippedName = StripPropertyPrefix(strippedName);
                 strippedName = PascalToCamelCase(strippedName);
                 break;
             case ENameType.Property:
-                strippedName = StripPropertyPrefix(strippedName);
                 break;
             case ENameType.Struct:
                 break;
@@ -248,31 +246,6 @@ public static class NameMapper
         }
         
         return EscapeKeywords(strippedName);
-    }
-    
-    public static string StripPropertyPrefix(string inName)
-    {
-        int nameOffset = 0;
-
-        while (true)
-        {
-            // Strip the "b" prefix from bool names
-            // if (inName.Length - nameOffset >= 2 && inName[nameOffset] == 'b' && char.IsUpper(inName[nameOffset + 1]))
-            // {
-            //     nameOffset += 1;
-            //     continue;
-            // }
-
-            // Strip the "In" prefix from names
-            if (inName.Length - nameOffset >= 3 && inName[nameOffset] == 'I' && inName[nameOffset + 1] == 'n' && char.IsUpper(inName[nameOffset + 2]))
-            {
-                nameOffset += 2;
-                continue;
-            }
-            break;
-        }
-
-        return nameOffset != 0 ? inName.Substring(nameOffset) : inName;
     }
     
     public static string EscapeKeywords(string name)
