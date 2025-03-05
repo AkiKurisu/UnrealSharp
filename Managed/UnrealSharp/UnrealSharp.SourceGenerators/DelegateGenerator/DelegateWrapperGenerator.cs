@@ -80,7 +80,7 @@ public class DelegateWrapperGenerator : ISourceGenerator
             }
             else if (delegateClass is DelegateDeclarationSyntax delegateDeclaration)
             {
-                delegateName = "U" + delegateDeclaration.Identifier.ValueText;
+                delegateName = "F" + delegateDeclaration.Identifier.ValueText;
             }
             
             if (string.IsNullOrEmpty(delegateName) || delegateSymbol == null)
