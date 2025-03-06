@@ -32,10 +32,17 @@ public abstract class NativeDataSimpleType(TypeReference typeRef, string marshal
         var isGenericMarshaller = marshallerName.Contains('`');
 
         TypeReference[] typeParams = GetTypeParams();
-        
-        MarshallerClass = isGenericMarshaller
-            ? WeaverHelper.FindGenericTypeInAssembly(_assembly, WeaverHelper.UnrealSharpNamespace, marshallerName, typeParams) 
-            : GetTypeInAssembly();
+
+        try
+        {
+            MarshallerClass = (isGenericMarshaller
+                ? WeaverHelper.FindGenericTypeInAssembly(_assembly, WeaverHelper.UnrealSharpNamespace, marshallerName, typeParams) 
+                : GetTypeInAssembly())!;
+        }
+        catch (InvalidOperationException e)
+        {
+            throw new InvalidOperationException($"Can not get marshaller from type {marshallerName}, {e.Message}");
+        }
 
         var marshallerTypeDefinition = GetMarshallerTypeDefinition();
         ToNative = WeaverHelper.FindMethod(marshallerTypeDefinition, "ToNative")!;
@@ -163,7 +170,7 @@ public abstract class NativeDataSimpleType(TypeReference typeRef, string marshal
     private TypeReference GetTypeInAssembly()
     {
         // Try to find the marshaller in the bindings assembly
-        var typeInBindingAssembly = WeaverHelper.FindTypeInAssembly(_assembly, marshallerName, WeaverHelper.UnrealSharpNamespace, false);
+        var typeInBindingAssembly = WeaverHelper.FindTypeInAssembly(_assembly!, marshallerName, WeaverHelper.UnrealSharpNamespace, false);
         if (typeInBindingAssembly is not null)
         {
             return typeInBindingAssembly;
@@ -172,7 +179,7 @@ public abstract class NativeDataSimpleType(TypeReference typeRef, string marshal
         var propType = CSharpType.Resolve();
             
         // Try to find the marshaller in the bindings again, but with the namespace of the property type.
-        var type = WeaverHelper.FindTypeInAssembly(_assembly, marshallerName, propType.Namespace, false);
+        var type = WeaverHelper.FindTypeInAssembly(_assembly!, marshallerName, propType.Namespace, false);
         if (type is not null)
         {
             return type;
@@ -194,6 +201,6 @@ public abstract class NativeDataSimpleType(TypeReference typeRef, string marshal
 
     private TypeDefinition GetMarshallerTypeDefinition()
     {
-        return GetMarshallerTypeDefinition(_assembly, MarshallerClass);
+        return GetMarshallerTypeDefinition(_assembly!, MarshallerClass);
     }
 }
