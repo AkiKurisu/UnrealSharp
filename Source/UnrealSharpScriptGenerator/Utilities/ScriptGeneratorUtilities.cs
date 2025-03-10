@@ -200,7 +200,7 @@ public static class ScriptGeneratorUtilities
                 continue;
             }
             
-            if (function.IsAnyGetter((function.Outer as UhtClass)!) || function.IsAnySetter((function.Outer as UhtClass)!))
+            if (function.IsAnyGetter() || function.IsAnySetter())
             {
                 continue;
             }
@@ -248,12 +248,6 @@ public static class ScriptGeneratorUtilities
             foreach (UhtFunction function in interfaceClass.Functions)
             {
                 if (HasFunction(exportedFunctions, function) || !CanExportFunction(function))
-                {
-                    continue;
-                }
-                
-                // Class properties use interface function as getter or setter
-                if (function.IsAnyGetter(classObj) || function.IsAnySetter(classObj))
                 {
                     continue;
                 }
