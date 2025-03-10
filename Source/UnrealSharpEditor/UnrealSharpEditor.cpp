@@ -444,21 +444,20 @@ void FUnrealSharpEditorModule::OnExploreArchiveDirectory(FString ArchiveDirector
 
 void FUnrealSharpEditorModule::PackageProject()
 {
-	FString ArchiveDirectory = SelectArchiveDirectory();
-
-	if (ArchiveDirectory.IsEmpty())
+	FString ArchiveExecutableFilePath = SelectArchiveExecutableFilePath();
+	if (ArchiveExecutableFilePath.IsEmpty())
 	{
 		return;
 	}
-
-	FString ExecutablePath = ArchiveDirectory / FApp::GetProjectName() + ".exe";
-	if (!FPaths::FileExists(ExecutablePath))
+	
+	if (!FPaths::FileExists(ArchiveExecutableFilePath))
 	{
-		FString DialogText = FString::Printf(TEXT("The executable for project '%s' could not be found in the directory: %s. Please select the root directory where you packaged your game."), FApp::GetProjectName(), *ArchiveDirectory);
+		const FString DialogText = FString::Printf(TEXT("The executable for project '%s' could not be found in the directory: %s. Please select the root directory where you packaged your game."), FApp::GetProjectName(), *ArchiveExecutableFilePath);
 		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(DialogText));
 		return;
 	}
 
+	const FString ArchiveDirectory = FPaths::ConvertRelativePathToFull(FPaths::GetPath(ArchiveExecutableFilePath));
 	FScopedSlowTask Progress(1, LOCTEXT("USharpPackaging", "Packaging Project..."));
 	Progress.MakeDialog();
 	
@@ -473,7 +472,7 @@ void FUnrealSharpEditorModule::PackageProject()
 	Info.ButtonDetails.Add(FNotificationButtonInfo(
 			LOCTEXT("USharpRunPackagedGame", "Run Packaged Game"),
 			LOCTEXT("", ""),
-			FSimpleDelegate::CreateStatic(&FUnrealSharpEditorModule::RunGame, ExecutablePath),
+			FSimpleDelegate::CreateStatic(&FUnrealSharpEditorModule::RunGame, ArchiveExecutableFilePath),
 			SNotificationItem::CS_None));
 
 	Info.ButtonDetails.Add(FNotificationButtonInfo(
@@ -482,7 +481,7 @@ void FUnrealSharpEditorModule::PackageProject()
 			FSimpleDelegate::CreateStatic(&FUnrealSharpEditorModule::OnExploreArchiveDirectory, ArchiveDirectory),
 			SNotificationItem::CS_None));
 
-	TSharedPtr<SNotificationItem> NotificationItem = FSlateNotificationManager::Get().AddNotification(Info);
+	const TSharedPtr<SNotificationItem> NotificationItem = FSlateNotificationManager::Get().AddNotification(Info);
 	NotificationItem->SetCompletionState(SNotificationItem::CS_None);
 }
 
@@ -506,21 +505,24 @@ void FUnrealSharpEditorModule::OpenSolution()
 
 };
 
-FString FUnrealSharpEditorModule::SelectArchiveDirectory()
+FString FUnrealSharpEditorModule::SelectArchiveExecutableFilePath()
 {
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
-	if(!DesktopPlatform)
+	if (!DesktopPlatform)
 	{
 		return FString();
 	}
 
-	FString DestinationFolder;
+	TArray<FString> OutFileNames;
 	const void* ParentWindowHandle = FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr);
-	const FString Title = LOCTEXT("USharpChooseArchiveRoot", "Find Archive Root").ToString();
+	const FString Title = LOCTEXT("USharpChooseArchiveExecutableFile", "Find Archive Executable File").ToString();
+	const FString FileTypes = TEXT("Executable File (*.exe)|*.exe");
+	const FString DefaultFileName = FString::Printf(TEXT("%ls.exe"), FApp::GetProjectName());
 
-	if(DesktopPlatform->OpenDirectoryDialog(ParentWindowHandle, Title, FString(), DestinationFolder))
+	if (DesktopPlatform->OpenFileDialog(ParentWindowHandle, Title, FPaths::ProjectDir(), DefaultFileName, FileTypes,
+	                                    EFileDialogFlags::None, OutFileNames) && OutFileNames.Num() > 0)
 	{
-		return FPaths::ConvertRelativePathToFull(DestinationFolder);
+		return FPaths::ConvertRelativePathToFull(OutFileNames[0]);
 	}
 
 	return FString();

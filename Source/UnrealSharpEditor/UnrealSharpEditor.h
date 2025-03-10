@@ -50,7 +50,7 @@ public:
     static void RepairComponents();
 
 private:
-    static FString SelectArchiveDirectory();
+    static FString SelectArchiveExecutableFilePath();
 
     static void RunGame(FString ExecutablePath);
 
