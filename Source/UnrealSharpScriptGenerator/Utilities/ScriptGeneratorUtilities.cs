@@ -179,9 +179,9 @@ public static class ScriptGeneratorUtilities
     
     public static void GetExportedFunctions(UhtClass classObj, List<UhtFunction> functions, List<UhtFunction> overridableFunctions, Dictionary<string, GetterSetterPair> getterSetterPairs)
     {
-        List<UhtFunction> exportedFunctions = new();
+        List<UhtFunction> processedFunctions = new();
         
-        bool HasFunction(List<UhtFunction> functionsToCheck, UhtFunction functionToTest)
+        bool HasFunctionProcessed(List<UhtFunction> functionsToCheck, UhtFunction functionToTest)
         {
             foreach (UhtFunction function in functionsToCheck)
             {
@@ -202,6 +202,7 @@ public static class ScriptGeneratorUtilities
             
             if (function.IsAnyGetter() || function.IsAnySetter())
             {
+                processedFunctions.Add(function);
                 continue;
             }
 
@@ -233,7 +234,7 @@ public static class ScriptGeneratorUtilities
                 functions.Add(function);
             }
 
-            exportedFunctions.Add(function);
+            processedFunctions.Add(function);
         }
 
         foreach (UhtClass declaration in classObj.GetInterfaces())
@@ -247,7 +248,7 @@ public static class ScriptGeneratorUtilities
             
             foreach (UhtFunction function in interfaceClass.Functions)
             {
-                if (HasFunction(exportedFunctions, function) || !CanExportFunction(function))
+                if (HasFunctionProcessed(processedFunctions, function) || !CanExportFunction(function))
                 {
                     continue;
                 }
@@ -261,7 +262,7 @@ public static class ScriptGeneratorUtilities
                     functions.Add(function);
                 }
                 
-                exportedFunctions.Add(function);
+                processedFunctions.Add(function);
             }
         }
     }
