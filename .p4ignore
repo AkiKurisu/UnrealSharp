@@ -1,0 +1,14 @@
+# Ignore project files in the root
+.idea\*
+.vs\*
+
+# Ignore any saved local files
+Binaries\*
+Saved\*
+obj\*
+bin\*
+Intermediate\*
+.git\*
+
+# Ignore UnrealSharp Generated files
+Managed\UnrealSharp\UnrealSharp\Generated\*
