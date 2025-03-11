@@ -163,7 +163,7 @@ public static class NameMapper
         const string ImplementationSuffix = "_Implementation";
         if (function.IsInterfaceFunction() && functionName.EndsWith(ImplementationSuffix))
         {
-            functionName = functionName[..^(ImplementationSuffix.Length + 1)];
+            functionName = functionName[..^ImplementationSuffix.Length];
         }
 
         if (function.Outer is not UhtClass)
