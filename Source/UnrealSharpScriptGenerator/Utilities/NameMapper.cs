@@ -153,6 +153,18 @@ public static class NameMapper
         {
             functionName = DelegateBasePropertyTranslator.GetDelegateName(function);
         }
+        
+        // This code style translation may conflict when function named without prefix has been exported.
+        // if (functionName.StartsWith("K2_") || functionName.StartsWith("BP_"))
+        // {
+        //     functionName = functionName.Substring(3);
+        // }
+        
+        const string ImplementationSuffix = "_Implementation";
+        if (function.IsInterfaceFunction() && functionName.EndsWith(ImplementationSuffix))
+        {
+            functionName = functionName[..^(ImplementationSuffix.Length + 1)];
+        }
 
         if (function.Outer is not UhtClass)
         {
